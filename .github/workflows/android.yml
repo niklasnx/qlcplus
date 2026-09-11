@@ -20,17 +20,36 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Install Qt
+      - name: Install Linux Build Dependencies
+        run: sudo apt-get update && sudo apt-get install -y bison flex pkg-config
+
+      # 1. Installiere das Host-Qt (Linux Desktop), das für die Build-Tools benötigt wird
+      - name: Install Qt Host (Linux)
         uses: jurplel/install-qt-action@v3
         with:
           version: '6.6.0'
+          host: 'linux'
+          target: 'desktop'
+
+      # 2. Installiere das Target-Qt (Android)
+      - name: Install Qt Target (Android)
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.6.0'
+          host: 'linux'
           target: 'android'
           arch: 'android_arm64_v8a'
 
       - name: Build APK
         run: |
           mkdir build && cd build
-          qt-cmake -DCMAKE_BUILD_TYPE=Release ..
+          
+          # Wir übergeben den expliziten Pfad zum Host-Qt (gcc_64) an qt-cmake
+          /home/runner/work/qlcplus/Qt/6.6.0/android_arm64_v8a/bin/qt-cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DQT_HOST_PATH=/home/runner/work/qlcplus/Qt/6.6.0/gcc_64 \
+            ..
+            
           cmake --build . --target apk -j$(nproc)
 
       - name: Upload APK
