@@ -23,39 +23,28 @@ jobs:
       - name: Install Linux Build Dependencies
         run: sudo apt-get update && sudo apt-get install -y bison flex pkg-config
 
-      - name: Install Android NDK (r23b, supported by Qt 6.6.0)
+      # The Ubuntu runner already ships an Android SDK and NDK (r27.x). Point
+      # Qt at them explicitly so the build is deterministic.
+      - name: Print Android toolchain
         run: |
-          SDKMANAGER=/usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager
-          yes | $SDKMANAGER --licenses >/dev/null 2>&1 || true
-          $SDKMANAGER --install "ndk;23.2.8568313" "platforms;android-33"
-          # Qt 6.6.0 bundles Android Gradle Plugin 7.4.1 (tested only up to
-          # compileSdk 33). androiddeployqt auto-selects the newest installed
-          # platform, so remove the bleeding-edge/ext platforms the runner
-          # ships with to force compileSdk 33 and avoid resource-linking
-          # failures with android-36-ext19 and friends.
-          for p in $($SDKMANAGER --list_installed 2>/dev/null | grep '^platforms;android-' | awk '{print $1}'); do
-            v="${p#platforms;android-}"
-            num="${v%%[^0-9]*}"
-            if [ -n "$num" ] && [ "$num" -ge 34 ] 2>/dev/null; then
-              $SDKMANAGER --uninstall "$p" || true
-            fi
-          done
-          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
-          echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> $GITHUB_ENV
-          echo "ANDROID_NDK_ROOT=/usr/local/lib/android/sdk/ndk/23.2.8568313" >> $GITHUB_ENV
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          echo "ANDROID_NDK_ROOT=$ANDROID_NDK_ROOT"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=$ANDROID_NDK_ROOT" >> $GITHUB_ENV
 
       - name: Install Qt Host (Linux)
-        uses: jurplel/install-qt-action@v3
+        uses: jurplel/install-qt-action@v4
         with:
-          version: '6.6.0'
+          version: '6.10.2'
           host: 'linux'
           target: 'desktop'
           modules: 'qtmultimedia qt3d'
 
       - name: Install Qt Target (Android)
-        uses: jurplel/install-qt-action@v3
+        uses: jurplel/install-qt-action@v4
         with:
-          version: '6.6.0'
+          version: '6.10.2'
           host: 'linux'
           target: 'android'
           arch: 'android_arm64_v8a'
@@ -65,9 +54,9 @@ jobs:
         run: |
           mkdir build && cd build
 
-          /home/runner/work/qlcplus/Qt/6.6.0/android_arm64_v8a/bin/qt-cmake \
+          /home/runner/work/qlcplus/Qt/6.10.2/android_arm64_v8a/bin/qt-cmake \
             -DCMAKE_BUILD_TYPE=Release \
-            -DQT_HOST_PATH=/home/runner/work/qlcplus/Qt/6.6.0/gcc_64 \
+            -DQT_HOST_PATH=/home/runner/work/qlcplus/Qt/6.10.2/gcc_64 \
             -DANDROID_ABI=arm64-v8a \
             -DANDROID_PLATFORM=android-31 \
             ..
