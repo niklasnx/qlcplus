@@ -88,7 +88,6 @@ jobs:
           ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           set -euo pipefail
 
@@ -106,11 +105,12 @@ jobs:
           APKSIGNER="$BT_DIR/apksigner"
 
           "$ZIPALIGN" -f 4 "$UNSIGNED" "$ALIGNED"
+          # PKCS12 keystores use the same password for the keystore and the
+          # key (keytool ignores -keypass for PKCS12), so no --key-pass here.
           "$APKSIGNER" sign \
             --ks "$RUNNER_TEMP/qlcplus-release.keystore" \
             --ks-key-alias "$ANDROID_KEY_ALIAS" \
             --ks-pass "pass:$ANDROID_KEYSTORE_PASSWORD" \
-            --key-pass "pass:$ANDROID_KEY_PASSWORD" \
             --out "$SIGNED" "$ALIGNED"
 
           echo "Signed APK: $SIGNED"
