@@ -60,6 +60,11 @@ jobs:
             -DANDROID_PLATFORM=android-31 \
             ..
 
+          # Build everything first so that the plugin .so files (artnet,
+          # e131, loopback, osc, os2l) referenced by the APK exist.
+          cmake --build . -j$(nproc)
+
+          # Then package them into the APK.
           cmake --build . --target apk -j$(nproc)
 
       - name: Upload APK

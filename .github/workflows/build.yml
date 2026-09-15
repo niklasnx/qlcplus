@@ -1,6 +1,8 @@
 name: QLCplus Github Actions CI Build
 
-on: ["push", "pull_request"]
+# Desktop (Linux/Windows/macOS) builds are only run manually to save
+# Actions minutes. The Android build runs automatically from android.yml.
+on: ["workflow_dispatch"]
 
 jobs:
   build-linux:
