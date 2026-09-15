@@ -41,7 +41,7 @@ jobs:
           host: 'linux'
           target: 'android'
           arch: 'android_arm64_v8a'
-          modules: 'qtmultimedia qt3d qtwebsockets qtconcurrent qtopengl'
+          modules: 'qtmultimedia qt3d qtwebsockets'
 
       - name: Build APK
         run: |
