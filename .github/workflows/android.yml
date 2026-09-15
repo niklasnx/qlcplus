@@ -83,8 +83,38 @@ jobs:
           # Then package them into the APK.
           cmake --build . --target apk -j$(nproc)
 
+      - name: Sign APK
+        run: |
+          set -euo pipefail
+
+          APK_BASE="build/qmlui/android-build/build/outputs/apk/release"
+          UNSIGNED="$APK_BASE/android-build-release-unsigned.apk"
+          ALIGNED="$APK_BASE/android-build-release-aligned.apk"
+          SIGNED="$APK_BASE/QLCPlus-release.apk"
+
+          # Decode the signing keystore from the repository secret
+          echo "$ANDROID_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/qlcplus-release.keystore"
+
+          # Determine the newest installed build-tools for zipalign/apksigner
+          BT_DIR="$(ls -d /usr/local/lib/android/sdk/build-tools/* | sort -V | tail -1)"
+          ZIPALIGN="$BT_DIR/zipalign"
+          APKSIGNER="$BT_DIR/apksigner"
+
+          "$ZIPALIGN" -f 4 "$UNSIGNED" "$ALIGNED"
+          "$APKSIGNER" sign \
+            --ks "$RUNNER_TEMP/qlcplus-release.keystore" \
+            --ks-key-alias "$ANDROID_KEY_ALIAS" \
+            --ks-pass "pass:$ANDROID_KEYSTORE_PASSWORD" \
+            --key-pass "pass:$ANDROID_KEY_PASSWORD" \
+            --out "$SIGNED" "$ALIGNED"
+
+          echo "Signed APK: $SIGNED"
+          "$APKSIGNER" verify --verbose "$SIGNED" | head -5
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: QLCPlus-Android-APK
-          path: build/**/*.apk
+          path: |
+            build/**/*.apk
+            build/qmlui/android-build/build/outputs/apk/release/QLCPlus-release.apk
