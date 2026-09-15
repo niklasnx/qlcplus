@@ -27,7 +27,19 @@ jobs:
         run: |
           SDKMANAGER=/usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager
           yes | $SDKMANAGER --licenses >/dev/null 2>&1 || true
-          $SDKMANAGER --install "ndk;23.2.8568313"
+          $SDKMANAGER --install "ndk;23.2.8568313" "platforms;android-33"
+          # Qt 6.6.0 bundles Android Gradle Plugin 7.4.1 (tested only up to
+          # compileSdk 33). androiddeployqt auto-selects the newest installed
+          # platform, so remove the bleeding-edge/ext platforms the runner
+          # ships with to force compileSdk 33 and avoid resource-linking
+          # failures with android-36-ext19 and friends.
+          for p in $($SDKMANAGER --list_installed 2>/dev/null | grep '^platforms;android-' | awk '{print $1}'); do
+            v="${p#platforms;android-}"
+            num="${v%%[^0-9]*}"
+            if [ -n "$num" ] && [ "$num" -ge 34 ] 2>/dev/null; then
+              $SDKMANAGER --uninstall "$p" || true
+            fi
+          done
           echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
           echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> $GITHUB_ENV
           echo "ANDROID_NDK_ROOT=/usr/local/lib/android/sdk/ndk/23.2.8568313" >> $GITHUB_ENV
